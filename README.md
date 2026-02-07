@@ -49,8 +49,9 @@ uv run chess-db list
 uv run chess-db eval "Italian Game" --depth 14
 ```
 
-**Animated terminal demo (SVG)**: `docs/eval-demo.svg`  
-Note: some editors (Cursor/VSCode) block SVG images in markdown preview—open the SVG directly or view the README on GitHub.
+![Terminal demo: eval](docs/eval-demo.svg)
+
+[View SVG directly](docs/eval-demo.svg) (some editors block SVG images in markdown preview)
 
 ### Learn the Scotch (recommended workflow)
 1) **See the decision tree** (what branches after the shared start):
@@ -65,8 +66,9 @@ uv run chess-db tree --prefix "Scotch Game" --levels 3
 uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8
 ```
 
-**Animated terminal demo (SVG)**: `docs/learn-demo.svg`  
-Note: some editors (Cursor/VSCode) block SVG images in markdown preview—open the SVG directly or view the README on GitHub.
+![Terminal demo: learn](docs/learn-demo.svg)
+
+[View SVG directly](docs/learn-demo.svg) (some editors block SVG images in markdown preview)
 
 3) **Quiz** (opening name → type the first N SAN tokens):
 
