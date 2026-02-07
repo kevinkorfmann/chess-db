@@ -49,7 +49,8 @@ uv run chess-db list
 uv run chess-db eval "Italian Game" --depth 14
 ```
 
-![Terminal demo: eval](docs/eval-demo.svg)
+**Animated terminal demo (SVG)**: `docs/eval-demo.svg`  
+Note: some editors (Cursor/VSCode) block SVG images in markdown preview—open the SVG directly or view the README on GitHub.
 
 ### Learn the Scotch (recommended workflow)
 1) **See the decision tree** (what branches after the shared start):
@@ -64,7 +65,8 @@ uv run chess-db tree --prefix "Scotch Game" --levels 3
 uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8
 ```
 
-![Terminal demo: learn](docs/learn-demo.svg)
+**Animated terminal demo (SVG)**: `docs/learn-demo.svg`  
+Note: some editors (Cursor/VSCode) block SVG images in markdown preview—open the SVG directly or view the README on GitHub.
 
 3) **Quiz** (opening name → type the first N SAN tokens):
 
@@ -108,4 +110,10 @@ Load the curated Scotch set into your local DB:
 
 ```bash
 uv run python scripts/add_scotch_game.py
+```
+
+Load the curated Italian Game set into your local DB:
+
+```bash
+uv run python scripts/add_italian_game.py
 ```
