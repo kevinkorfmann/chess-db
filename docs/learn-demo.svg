@@ -50,7 +50,7 @@
   </g>
 
   <g opacity="0">
-    <text class="mono" x="44" y="266"><tspan class="crit">CRITICAL</tspan><tspan class="mono">: ply 22 (Black) Qe6+  +3.31 ’ +4.96  (” 1.65)</tspan></text>
+    <text class="mono" x="44" y="266"><tspan class="crit">CRITICAL</tspan><tspan class="mono">: ply 22 (Black) Qe6+  +3.31 &#x2192; +4.96  (&#x0394; 1.65)</tspan></text>
     <animate attributeName="opacity" values="0;1" begin="2.2s" dur="0.01s" fill="freeze"/>
   </g>
 
