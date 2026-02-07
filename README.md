@@ -63,3 +63,22 @@
  ```bash
  uv run chess-db eval-all --depth 14
  ```
+
+### Learn / memorize (spaced repetition)
+Create daily review cards automatically (it seeds on first use) and see what's due:
+
+```bash
+uv run chess-db due --prefix "Scotch Game"
+```
+
+Quiz yourself (opening name → type first N SAN tokens). Use `--dry-run` to see answers.
+
+```bash
+uv run chess-db quiz --prefix "Scotch Game" --tokens 8
+```
+
+Add a mnemonic / plan to show during `show` and after a quiz:
+
+```bash
+uv run chess-db note "Scotch Game - Scotch Standard" --text "Default: ...Bc5 -> Be3, c3, Bc4, O-O. Play for development + central pressure."
+```

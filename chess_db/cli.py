@@ -9,6 +9,14 @@ from .db import Db, init_db
 from .engine import evaluate_position, resolve_stockfish_path
 from .evals import latest_evaluation, store_evaluation
 from .openings import add_opening, get_opening_by_name, list_openings, opening_final_board
+from .study import (
+    apply_grade,
+    check_typed_moves,
+    ensure_cards_for_prefix,
+    get_notes,
+    pick_quiz_openings,
+    set_notes,
+)
 
 
 app = typer.Typer(add_completion=False, help="Store chess openings and evaluate them with Stockfish.")
@@ -140,16 +148,132 @@ def show(name: str) -> None:
         if opening is None:
             raise typer.BadParameter(f"No opening named '{name}'.")
         latest = latest_evaluation(conn, opening.id)
+        notes = get_notes(conn, opening.id)
 
     console.print(f"[bold]{opening.name}[/bold]")
     console.print(opening.moves_san)
     board = opening_final_board(opening.moves_san)
     console.print(f"FEN: {board.fen()}")
+    if notes:
+        console.print("\n[bold]Notes[/bold]")
+        console.print(notes)
     if latest:
         console.print(
             f"Latest eval @ depth {latest.depth}: "
             f"[cyan]{_format_score(latest.score_cp, latest.mate_in)}[/cyan]"
         )
+
+
+@app.command()
+def note(
+    name: str,
+    text: str = typer.Option(..., "--text", help="Notes/mnemonic for this opening"),
+) -> None:
+    """Attach notes (mnemonics, triggers, plans) to an opening."""
+    db = _db()
+    init_db(db)
+
+    with db.connect() as conn:
+        opening = get_opening_by_name(conn, name)
+        if opening is None:
+            raise typer.BadParameter(f"No opening named '{name}'.")
+        set_notes(conn, opening.id, text.strip())
+
+    console.print(f"[green]Saved notes[/green] for [bold]{opening.name}[/bold]")
+
+
+@app.command()
+def due(
+    prefix: str = typer.Option("Scotch Game", "--prefix", help="Filter by opening name prefix"),
+    limit: int = typer.Option(20, "--limit", min=1, max=200),
+) -> None:
+    """Show what you should review today (spaced repetition)."""
+    import datetime as _dt
+
+    today = _dt.date.today().isoformat()
+    db = _db()
+    init_db(db)
+
+    with db.connect() as conn:
+        ensure_cards_for_prefix(conn, prefix=prefix)
+        rows = pick_quiz_openings(conn, prefix=prefix, limit=limit)
+
+    due_rows = [r for r in rows if r.due_date <= today]
+    if not due_rows:
+        console.print(f"[green]Nothing due today[/green] for prefix '{prefix}'.")
+        return
+
+    table = Table(title=f"Due today (prefix: {prefix})")
+    table.add_column("Opening", style="bold")
+    table.add_column("Due")
+    for r in due_rows:
+        table.add_row(r.name, r.due_date)
+    console.print(table)
+
+
+@app.command()
+def quiz(
+    prefix: str = typer.Option("Scotch Game", "--prefix", help="Filter by opening name prefix"),
+    limit: int = typer.Option(10, "--limit", min=1, max=200),
+    tokens: int = typer.Option(10, "--tokens", min=2, max=60, help="How many SAN tokens to recall"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show answers without prompting or scheduling"),
+) -> None:
+    """
+    Quiz yourself: given an opening name, type the first N SAN tokens.
+    Then rate your recall (0..5) to schedule the next review.
+    """
+    db = _db()
+    init_db(db)
+
+    with db.connect() as conn:
+        created = ensure_cards_for_prefix(conn, prefix=prefix)
+        openings = pick_quiz_openings(conn, prefix=prefix, limit=limit)
+
+    if created:
+        console.print(f"[dim]Created {created} study cards.[/dim]")
+
+    if not openings:
+        console.print(f"[yellow]No openings found[/yellow] for prefix '{prefix}'.")
+        return
+
+    for o in openings:
+        target = " ".join(o.moves_san.split()[:tokens])
+        console.print(f"\n[bold]{o.name}[/bold]  [dim](due {o.due_date})[/dim]")
+
+        if dry_run:
+            console.print(f"[cyan]Answer[/cyan]: {target}")
+            continue
+
+        typed = typer.prompt(f"Type first {tokens} moves (SAN tokens)", default="", show_default=False)
+        check = check_typed_moves(moves_san=o.moves_san, typed=typed, tokens=tokens)
+
+        if check.fully_correct:
+            console.print(f"[green]Correct[/green] ({check.correct_tokens}/{check.target_tokens})")
+        else:
+            console.print(f"[yellow]Partial[/yellow] ({check.correct_tokens}/{check.target_tokens})")
+            console.print(f"[cyan]Answer[/cyan]: {' '.join(check.target)}")
+
+        grade_raw = typer.prompt("Grade your recall (0..5)", default="4")
+        try:
+            grade_i = int(str(grade_raw).strip())
+        except ValueError as e:
+            raise typer.BadParameter("Grade must be an integer 0..5") from e
+
+        with db.connect() as conn:
+            apply_grade(
+                conn,
+                opening_id=o.id,
+                grade=grade_i,
+                prompt_mode="name_to_moves",
+                prompt=o.name,
+                typed_moves=typed,
+                correct_tokens=check.correct_tokens,
+                target_tokens=check.target_tokens,
+            )
+            notes = get_notes(conn, o.id)
+
+        if notes:
+            console.print("[dim]Note:[/dim] " + notes)
 
 
 if __name__ == "__main__":
