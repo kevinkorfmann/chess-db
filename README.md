@@ -82,3 +82,16 @@ Add a mnemonic / plan to show during `show` and after a quiz:
 ```bash
 uv run chess-db note "Scotch Game - Scotch Standard" --text "Default: ...Bc5 -> Be3, c3, Bc4, O-O. Play for development + central pressure."
 ```
+
+### Learn first (before quizzing)
+See the branching structure (helps you memorize as “if they play X, I do Y”):
+
+```bash
+uv run chess-db tree --prefix "Scotch Game" --levels 3
+```
+
+Print a study sheet with lines split into chunks you can rehearse:
+
+```bash
+uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8
+```
