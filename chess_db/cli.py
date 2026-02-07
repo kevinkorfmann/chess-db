@@ -17,6 +17,7 @@ from .study import (
     pick_quiz_openings,
     set_notes,
 )
+from .teach import Line, branch_by_token, chunk_tokens, longest_common_prefix
 
 
 app = typer.Typer(add_completion=False, help="Store chess openings and evaluate them with Stockfish.")
@@ -274,6 +275,82 @@ def quiz(
 
         if notes:
             console.print("[dim]Note:[/dim] " + notes)
+
+
+@app.command()
+def learn(
+    prefix: str = typer.Option("Scotch Game", "--prefix", help="Filter by opening name prefix"),
+    limit: int = typer.Option(20, "--limit", min=1, max=200),
+    chunk: int = typer.Option(8, "--chunk", min=4, max=20, help="Tokens per chunk to memorize"),
+) -> None:
+    """
+    Print a study sheet: each opening split into small chunks you can rehearse.
+    Use this BEFORE quizzing.
+    """
+    db = _db()
+    init_db(db)
+
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT name, moves_san FROM openings WHERE name LIKE ? ORDER BY name ASC LIMIT ?",
+            (f"{prefix}%", limit),
+        ).fetchall()
+
+    if not rows:
+        console.print(f"[yellow]No openings found[/yellow] for prefix '{prefix}'.")
+        return
+
+    for r in rows:
+        name = r["name"]
+        moves_san = r["moves_san"]
+        toks = [t for t in moves_san.split() if t.strip()]
+        console.print(f"\n[bold]{name}[/bold]")
+        for i, ch in enumerate(chunk_tokens(toks, size=chunk), start=1):
+            console.print(f"[dim]{i:02d}[/dim]  {ch}")
+
+
+@app.command()
+def tree(
+    prefix: str = typer.Option("Scotch Game", "--prefix", help="Filter by opening name prefix"),
+    limit: int = typer.Option(200, "--limit", min=1, max=1000),
+    levels: int = typer.Option(3, "--levels", min=1, max=6, help="How many branching levels to show"),
+) -> None:
+    """
+    Show the branching structure: common prefix, then what the next move usually is.
+    This helps you memorize as a decision tree (if they play X, respond with Y).
+    """
+    db = _db()
+    init_db(db)
+
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT name, moves_san FROM openings WHERE name LIKE ? ORDER BY name ASC LIMIT ?",
+            (f"{prefix}%", limit),
+        ).fetchall()
+
+    lines = [Line(name=r["name"], moves_san=r["moves_san"]) for r in rows]
+    if not lines:
+        console.print(f"[yellow]No openings found[/yellow] for prefix '{prefix}'.")
+        return
+
+    seqs = [ln.tokens for ln in lines]
+    lcp = longest_common_prefix(seqs)
+    console.print(f"[bold]Common start[/bold] ({len(lcp)} tokens)")
+    console.print(" ".join(lcp) if lcp else "[dim](none)[/dim]")
+
+    def _recurse(sub: list[Line], idx: int, depth: int, indent: str) -> None:
+        if depth <= 0:
+            return
+        branches = branch_by_token(sub, idx)
+        for br in branches:
+            ex = ", ".join(br.example_names)
+            console.print(f"{indent}[cyan]{br.token}[/cyan]  [dim]({br.count})[/dim]  {ex}")
+            if br.token != "<END>" and depth > 1 and br.count > 1:
+                nxt = [ln for ln in sub if (ln.tokens[idx] if idx < len(ln.tokens) else "<END>") == br.token]
+                _recurse(nxt, idx + 1, depth - 1, indent + "  ")
+
+    console.print("\n[bold]Next branches[/bold]")
+    _recurse(lines, len(lcp), levels, indent="- ")
 
 
 if __name__ == "__main__":
