@@ -114,8 +114,24 @@ Load the curated Scotch set into your local DB:
 uv run python scripts/add_scotch_game.py
 ```
 
+Load the Scotch Game Mastery set (paste your lines into the script first):
+
+```bash
+uv run python scripts/add_scotch_extended.py
+```
+
 Load the curated Italian Game set into your local DB:
 
 ```bash
 uv run python scripts/add_italian_game.py
+```
+
+Import your own lines (e.g. from a course / notes) from a TSV file:
+
+- Format: one line per opening as `<name><TAB><pgn moves>`
+- Example:
+  - `Scotch Game - Line 01<TAB>1. e4 e5 2. Nf3 Nc6 3. d4 exd4 ...`
+
+```bash
+uv run python scripts/import_openings_tsv.py path/to/openings.tsv
 ```
