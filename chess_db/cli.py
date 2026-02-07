@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+import contextlib
+import math
+
+import chess
+import chess.engine
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from .config import get_settings
@@ -17,7 +23,7 @@ from .study import (
     pick_quiz_openings,
     set_notes,
 )
-from .teach import Line, branch_by_token, chunk_tokens, longest_common_prefix
+from .teach import Line, branch_by_token, longest_common_prefix
 
 
 app = typer.Typer(add_completion=False, help="Store chess openings and evaluate them with Stockfish.")
@@ -70,6 +76,44 @@ def _format_score(score_cp: int | None, mate_in: int | None) -> str:
     if score_cp is None:
         return "?"
     return f"{score_cp / 100:.2f}"
+
+
+def _format_cp(cp: int) -> str:
+    # Always show sign, in pawns.
+    return f"{cp / 100:+.2f}"
+
+
+def _analyse_white_pov(engine: chess.engine.SimpleEngine, board: chess.Board, *, depth: int) -> tuple[int, str]:
+    """
+    Returns (numeric_value, display_string) from White's POV.
+    numeric_value is centipawns, or +/-100000 for mate.
+    """
+    info = engine.analyse(board, chess.engine.Limit(depth=depth), multipv=1)
+    if isinstance(info, list):
+        # python-chess may return a 1-element list when multipv is set.
+        info = info[0] if info else {}
+    score = info.get("score")
+    if score is None:
+        return 0, "?"
+
+    pov = score.pov(chess.WHITE)
+    mate = pov.mate()
+    if mate is not None:
+        numeric = 100000 if mate > 0 else -100000
+        return numeric, f"M{mate}"
+
+    cp = pov.score(mate_score=100000)
+    if cp is None:
+        return 0, "?"
+    cp_i = int(cp)
+    return cp_i, _format_cp(cp_i)
+
+
+def _chunk_display_tokens(tokens: list[str], *, chunk: int) -> list[str]:
+    out: list[str] = []
+    for i in range(0, len(tokens), chunk):
+        out.append(" ".join(tokens[i : i + chunk]))
+    return out
 
 
 @app.command()
@@ -282,6 +326,11 @@ def learn(
     prefix: str = typer.Option("Scotch Game", "--prefix", help="Filter by opening name prefix"),
     limit: int = typer.Option(20, "--limit", min=1, max=200),
     chunk: int = typer.Option(8, "--chunk", min=4, max=20, help="Tokens per chunk to memorize"),
+    eval: bool = typer.Option(True, "--eval/--no-eval", help="Show Stockfish eval + critical swing"),
+    depth: int = typer.Option(10, "--depth", min=1, max=30, help="Stockfish depth for learn evals"),
+    swing_cp: int = typer.Option(
+        120, "--swing-cp", min=10, max=2000, help="Highlight swings >= this (centipawns)"
+    ),
 ) -> None:
     """
     Print a study sheet: each opening split into small chunks you can rehearse.
@@ -300,13 +349,86 @@ def learn(
         console.print(f"[yellow]No openings found[/yellow] for prefix '{prefix}'.")
         return
 
-    for r in rows:
-        name = r["name"]
-        moves_san = r["moves_san"]
-        toks = [t for t in moves_san.split() if t.strip()]
-        console.print(f"\n[bold]{name}[/bold]")
-        for i, ch in enumerate(chunk_tokens(toks, size=chunk), start=1):
-            console.print(f"[dim]{i:02d}[/dim]  {ch}")
+    engine: chess.engine.SimpleEngine | None = None
+    if eval:
+        settings = get_settings()
+        try:
+            stockfish_path = resolve_stockfish_path(settings.stockfish_path)
+            engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
+        except FileNotFoundError as e:
+            console.print(f"[yellow]Stockfish not available[/yellow]: {e}")
+            console.print("[dim]Continuing without eval. Install Stockfish or set STOCKFISH_PATH.[/dim]")
+            engine = None
+
+    try:
+        for r in rows:
+            name = r["name"]
+            moves_san = r["moves_san"]
+            toks = [t for t in moves_san.split() if t.strip()]
+
+            critical_idx: int | None = None
+            final_eval_str: str | None = None
+            critical_msg: str | None = None
+
+            if engine is not None:
+                board = chess.Board()
+                numeric_prev, disp_prev = _analyse_white_pov(engine, board, depth=depth)
+                best_abs = -math.inf
+                best_idx: int | None = None
+                best_before = disp_prev
+                best_after = disp_prev
+                best_delta = 0
+
+                for idx, san in enumerate(toks):
+                    move = board.parse_san(san)
+                    board.push(move)
+                    numeric_now, disp_now = _analyse_white_pov(engine, board, depth=depth)
+                    delta = numeric_now - numeric_prev
+                    abs_delta = abs(delta)
+                    if abs_delta > best_abs:
+                        best_abs = abs_delta
+                        best_idx = idx
+                        best_before = disp_prev
+                        best_after = disp_now
+                        best_delta = delta
+
+                    numeric_prev, disp_prev = numeric_now, disp_now
+
+                final_eval_str = disp_prev
+                if best_idx is not None:
+                    critical_idx = best_idx
+                    ply = critical_idx + 1
+                    side = "White" if (critical_idx % 2) == 0 else "Black"
+                    delta_pawns = abs(best_delta) / 100.0
+                    is_sudden = best_abs >= swing_cp
+                    tag = "[bold red]CRITICAL[/bold red]" if is_sudden else "[yellow]Largest swing[/yellow]"
+                    critical_msg = (
+                        f"{tag}: ply {ply} ({side}) "
+                        f"[bold]{escape(toks[critical_idx])}[/bold]  "
+                        f"{best_before} → {best_after}  [dim](Δ {delta_pawns:.2f})[/dim]"
+                    )
+
+            display_tokens: list[str] = []
+            for i, t in enumerate(toks):
+                tok = escape(t)
+                if critical_idx is not None and i == critical_idx:
+                    tok = f"[bold reverse red]{tok}[/bold reverse red]"
+                else:
+                    tok = f"[white]{tok}[/white]"
+                display_tokens.append(tok)
+
+            console.print(f"\n[bold]{name}[/bold]")
+            for i, ch in enumerate(_chunk_display_tokens(display_tokens, chunk=chunk), start=1):
+                console.print(f"[dim]{i:02d}[/dim]  {ch}")
+
+            if engine is not None and final_eval_str is not None:
+                console.print(f"[dim]Final eval (Stockfish d{depth}, White POV)[/dim]: [cyan]{final_eval_str}[/cyan]")
+            if critical_msg:
+                console.print(critical_msg)
+    finally:
+        with contextlib.suppress(Exception):
+            if engine is not None:
+                engine.quit()
 
 
 @app.command()

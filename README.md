@@ -95,3 +95,19 @@ Print a study sheet with lines split into chunks you can rehearse:
 ```bash
 uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8
 ```
+
+By default `learn` also runs Stockfish (if available) and will:
+- Print the **final eval** for the line
+- Highlight the **critical move** where evaluation swings the most
+
+Tune it:
+
+```bash
+uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8 --depth 10 --swing-cp 120
+```
+
+Skip engine eval if you want it instant:
+
+```bash
+uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8 --no-eval
+```
