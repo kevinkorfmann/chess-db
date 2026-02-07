@@ -1,0 +1,27 @@
+ [project]
+ name = "chess-db"
+ version = "0.1.0"
+ description = "Save chess openings and evaluate them with Stockfish (UCI) to avoid learning bad lines."
+ readme = "README.md"
+ requires-python = ">=3.11"
+ dependencies = [
+   "python-chess>=1.999",
+   "typer>=0.12.0",
+   "rich>=13.7.0",
+ ]
+ 
+ [project.scripts]
+ chess-db = "chess_db.cli:app"
+ 
+ [build-system]
+ requires = ["hatchling>=1.24.0"]
+ build-backend = "hatchling.build"
+ 
+ [tool.uv]
+ dev-dependencies = [
+   "ruff>=0.6.0",
+ ]
+ 
+ [tool.ruff]
+ target-version = "py311"
+ line-length = 100
