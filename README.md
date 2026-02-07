@@ -21,9 +21,9 @@ uv run python scripts/add_scotch_game.py
 uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --depth 10 --swing-cp 120
 ```
 
-![Terminal demo: learn](docs/learn-demo.svg)
+![Terminal demo: learn (didactic)](docs/learn-didactic-demo.svg)
 
-[View SVG directly](docs/learn-demo.svg) (some editors block SVG images in markdown preview)
+[View SVG directly](docs/learn-didactic-demo.svg) (some editors block SVG images in markdown preview)
 
 ### Setup
 #### Prereqs
@@ -110,6 +110,12 @@ Make it instant:
 ```bash
 uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --no-eval
 ```
+
+If you prefer fewer, longer rehearsal lines, increase chunk size (example demo):
+
+![Terminal demo: learn + eval + critical swing](docs/learn-demo.svg)
+
+[View SVG directly](docs/learn-demo.svg) (some editors block SVG images in markdown preview)
 
 ### Notes / mnemonics (for “why”)
 Attach a 1-line plan you’ll see during `show` and after quizzes:

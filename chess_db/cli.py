@@ -116,6 +116,26 @@ def _chunk_display_tokens(tokens: list[str], *, chunk: int) -> list[str]:
     return out
 
 
+def _format_move_pairs(display_tokens: list[str]) -> list[str]:
+    """
+    Format SAN tokens as full moves:
+      01  1. e4 e5
+      02  2. Nf3 Nc6
+
+    If there's an odd trailing token, prints a final line with only White's move.
+    """
+    lines: list[str] = []
+    for ply0 in range(0, len(display_tokens), 2):
+        move_no = (ply0 // 2) + 1
+        w = display_tokens[ply0]
+        b = display_tokens[ply0 + 1] if (ply0 + 1) < len(display_tokens) else ""
+        if b:
+            lines.append(f"[dim]{move_no:02d}[/dim]  {move_no}. {w} {b}")
+        else:
+            lines.append(f"[dim]{move_no:02d}[/dim]  {move_no}. {w}")
+    return lines
+
+
 @app.command()
 def eval(
     name: str,
@@ -347,94 +367,107 @@ def learn(
 
     with db.connect() as conn:
         rows = conn.execute(
-            "SELECT name, moves_san FROM openings WHERE name LIKE ? ORDER BY name ASC LIMIT ?",
+            "SELECT id, name, moves_san FROM openings WHERE name LIKE ? ORDER BY name ASC LIMIT ?",
             (f"{prefix}%", limit),
         ).fetchall()
 
-    if not rows:
-        console.print(f"[yellow]No openings found[/yellow] for prefix '{prefix}'.")
-        return
+        if not rows:
+            console.print(f"[yellow]No openings found[/yellow] for prefix '{prefix}'.")
+            return
 
-    engine: chess.engine.SimpleEngine | None = None
-    if eval:
-        settings = get_settings()
+        engine: chess.engine.SimpleEngine | None = None
+        if eval:
+            settings = get_settings()
+            try:
+                stockfish_path = resolve_stockfish_path(settings.stockfish_path)
+                engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
+            except FileNotFoundError as e:
+                console.print(f"[yellow]Stockfish not available[/yellow]: {e}")
+                console.print("[dim]Continuing without eval. Install Stockfish or set STOCKFISH_PATH.[/dim]")
+                engine = None
+
         try:
-            stockfish_path = resolve_stockfish_path(settings.stockfish_path)
-            engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
-        except FileNotFoundError as e:
-            console.print(f"[yellow]Stockfish not available[/yellow]: {e}")
-            console.print("[dim]Continuing without eval. Install Stockfish or set STOCKFISH_PATH.[/dim]")
-            engine = None
+            for r in rows:
+                opening_id = int(r["id"])
+                name = str(r["name"])
+                moves_san = str(r["moves_san"])
+                toks = [t for t in moves_san.split() if t.strip()]
 
-    try:
-        for r in rows:
-            name = r["name"]
-            moves_san = r["moves_san"]
-            toks = [t for t in moves_san.split() if t.strip()]
+                notes = get_notes(conn, opening_id)
 
-            critical_idx: int | None = None
-            final_eval_str: str | None = None
-            critical_msg: str | None = None
+                critical_idx: int | None = None
+                final_eval_str: str | None = None
+                critical_msg: str | None = None
 
-            if engine is not None:
-                board = chess.Board()
-                numeric_prev, disp_prev = _analyse_white_pov(engine, board, depth=depth)
-                best_abs = -math.inf
-                best_idx: int | None = None
-                best_before = disp_prev
-                best_after = disp_prev
-                best_delta = 0
+                if engine is not None:
+                    board = chess.Board()
+                    numeric_prev, disp_prev = _analyse_white_pov(engine, board, depth=depth)
+                    best_abs = -math.inf
+                    best_idx: int | None = None
+                    best_before = disp_prev
+                    best_after = disp_prev
+                    best_delta = 0
 
-                for idx, san in enumerate(toks):
-                    move = board.parse_san(san)
-                    board.push(move)
-                    numeric_now, disp_now = _analyse_white_pov(engine, board, depth=depth)
-                    delta = numeric_now - numeric_prev
-                    abs_delta = abs(delta)
-                    if abs_delta > best_abs:
-                        best_abs = abs_delta
-                        best_idx = idx
-                        best_before = disp_prev
-                        best_after = disp_now
-                        best_delta = delta
+                    for idx, san in enumerate(toks):
+                        move = board.parse_san(san)
+                        board.push(move)
+                        numeric_now, disp_now = _analyse_white_pov(engine, board, depth=depth)
+                        delta = numeric_now - numeric_prev
+                        abs_delta = abs(delta)
+                        if abs_delta > best_abs:
+                            best_abs = abs_delta
+                            best_idx = idx
+                            best_before = disp_prev
+                            best_after = disp_now
+                            best_delta = delta
 
-                    numeric_prev, disp_prev = numeric_now, disp_now
+                        numeric_prev, disp_prev = numeric_now, disp_now
 
-                final_eval_str = disp_prev
-                if best_idx is not None:
-                    critical_idx = best_idx
-                    ply = critical_idx + 1
-                    side = "White" if (critical_idx % 2) == 0 else "Black"
-                    delta_pawns = abs(best_delta) / 100.0
-                    is_sudden = best_abs >= swing_cp
-                    tag = "[bold red]CRITICAL[/bold red]" if is_sudden else "[yellow]Largest swing[/yellow]"
-                    critical_msg = (
-                        f"{tag}: ply {ply} ({side}) "
-                        f"[bold]{escape(toks[critical_idx])}[/bold]  "
-                        f"{best_before} → {best_after}  [dim](Δ {delta_pawns:.2f})[/dim]"
-                    )
+                    final_eval_str = disp_prev
+                    if best_idx is not None:
+                        critical_idx = best_idx
+                        side = "White" if (critical_idx % 2) == 0 else "Black"
+                        move_no = (critical_idx // 2) + 1
+                        move_tag = f"{move_no}." if side == "White" else f"{move_no}..."
+                        delta_pawns = abs(best_delta) / 100.0
+                        is_sudden = best_abs >= swing_cp
+                        tag = "[bold red]CRITICAL[/bold red]" if is_sudden else "[yellow]Largest swing[/yellow]"
+                        critical_msg = (
+                            f"{tag}: {move_tag} "
+                            f"[bold]{escape(toks[critical_idx])}[/bold]  "
+                            f"{best_before} → {best_after}  [dim](Δ {delta_pawns:.2f})[/dim]"
+                        )
 
-            display_tokens: list[str] = []
-            for i, t in enumerate(toks):
-                tok = escape(t)
-                if critical_idx is not None and i == critical_idx:
-                    tok = f"[bold reverse red]{tok}[/bold reverse red]"
+                display_tokens: list[str] = []
+                for i, t in enumerate(toks):
+                    tok = escape(t)
+                    if critical_idx is not None and i == critical_idx:
+                        tok = f"[bold reverse red]{tok}[/bold reverse red]"
+                    else:
+                        tok = f"[white]{tok}[/white]"
+                    display_tokens.append(tok)
+
+                console.print(f"\n[bold]{name}[/bold]")
+                if notes:
+                    console.print("[dim]Note:[/dim] " + notes)
+
+                if chunk == 2:
+                    for ln in _format_move_pairs(display_tokens):
+                        console.print(ln)
                 else:
-                    tok = f"[white]{tok}[/white]"
-                display_tokens.append(tok)
+                    for i, ch in enumerate(_chunk_display_tokens(display_tokens, chunk=chunk), start=1):
+                        console.print(f"[dim]{i:02d}[/dim]  {ch}")
 
-            console.print(f"\n[bold]{name}[/bold]")
-            for i, ch in enumerate(_chunk_display_tokens(display_tokens, chunk=chunk), start=1):
-                console.print(f"[dim]{i:02d}[/dim]  {ch}")
-
-            if engine is not None and final_eval_str is not None:
-                console.print(f"[dim]Final eval (Stockfish d{depth}, White POV)[/dim]: [cyan]{final_eval_str}[/cyan]")
-            if critical_msg:
-                console.print(critical_msg)
-    finally:
-        with contextlib.suppress(Exception):
-            if engine is not None:
-                engine.quit()
+                if engine is not None and final_eval_str is not None:
+                    console.print(
+                        f"[dim]Final eval (Stockfish d{depth}, White POV)[/dim]: [cyan]{final_eval_str}[/cyan]"
+                    )
+                if critical_msg:
+                    console.print(critical_msg)
+        finally:
+            with contextlib.suppress(Exception):
+                if engine is not None:
+                    engine.quit()
 
 
 @app.command()
