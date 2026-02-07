@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="420" viewBox="0 0 980 420">
+  <defs>
+    <style>
+      .bg { fill: #0b0f14; }
+      .panel { fill: #0f1720; stroke: #1f2a37; stroke-width: 2; }
+      .title { fill: #cbd5e1; font: 600 14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+      .mono { fill: #e5e7eb; font: 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .dim { fill: #94a3b8; }
+      .prompt { fill: #22c55e; }
+      .accent { fill: #60a5fa; }
+      .crit { fill: #fb7185; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="980" height="420"/>
+  <rect class="panel" x="20" y="20" width="940" height="380" rx="12"/>
+
+  <text class="title" x="44" y="48">Demo: learn + eval + critical swing</text>
+
+  <!-- Lines appear one-by-one -->
+  <g opacity="0">
+    <text class="mono" x="44" y="86"><tspan class="prompt">$</tspan> uv run chess-db learn --prefix "Scotch Game" --limit 1 --chunk 8 --eval --depth 6 --swing-cp 120</text>
+    <animate attributeName="opacity" values="0;1" begin="0.2s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="126"><tspan class="accent">Scotch Game - Bishop Skewer</tspan></text>
+    <animate attributeName="opacity" values="0;1" begin="1.0s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="152"><tspan class="dim">01</tspan>  e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Nxd4</text>
+    <animate attributeName="opacity" values="0;1" begin="1.2s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="176"><tspan class="dim">02</tspan>  Qxd4 Nf6 e5 Qe7 Be3 Ng8 Nc3 d6</text>
+    <animate attributeName="opacity" values="0;1" begin="1.35s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="200"><tspan class="dim">03</tspan>  Nd5 Qd7 exd6 Qxd6 Bf4 Qe6+ Be2</text>
+    <animate attributeName="opacity" values="0;1" begin="1.5s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="240"><tspan class="dim">Final eval (Stockfish d6, White POV):</tspan> <tspan class="accent">+3.41</tspan></text>
+    <animate attributeName="opacity" values="0;1" begin="2.0s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="266"><tspan class="crit">CRITICAL</tspan><tspan class="mono">: ply 22 (Black) Qe6+  +3.31 ’ +4.96  (” 1.65)</tspan></text>
+    <animate attributeName="opacity" values="0;1" begin="2.2s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <!-- Cursor blink -->
+  <rect x="44" y="292" width="9" height="16" fill="#e5e7eb" opacity="0">
+    <animate attributeName="opacity" values="0;1;0;1;0" begin="2.6s" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+</svg>

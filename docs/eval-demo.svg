@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="300" viewBox="0 0 980 300">
+  <defs>
+    <style>
+      .bg { fill: #0b0f14; }
+      .panel { fill: #0f1720; stroke: #1f2a37; stroke-width: 2; }
+      .title { fill: #cbd5e1; font: 600 14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+      .mono { fill: #e5e7eb; font: 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .dim { fill: #94a3b8; }
+      .prompt { fill: #22c55e; }
+      .accent { fill: #60a5fa; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="980" height="300"/>
+  <rect class="panel" x="20" y="20" width="940" height="260" rx="12"/>
+
+  <text class="title" x="44" y="48">Demo: evaluate an opening with Stockfish</text>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="86"><tspan class="prompt">$</tspan> uv run chess-db eval "Italian Game" --depth 8</text>
+    <animate attributeName="opacity" values="0;1" begin="0.2s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="126"><tspan class="accent">Italian Game</tspan> <tspan class="dim">@ depth 8:</tspan> -0.14</text>
+    <animate attributeName="opacity" values="0;1" begin="1.0s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <g opacity="0">
+    <text class="mono" x="44" y="152"><tspan class="dim">pv:</tspan> g8f6 d2d3 a7a6 a2a4 h7h6</text>
+    <animate attributeName="opacity" values="0;1" begin="1.2s" dur="0.01s" fill="freeze"/>
+  </g>
+
+  <rect x="44" y="178" width="9" height="16" fill="#e5e7eb" opacity="0">
+    <animate attributeName="opacity" values="0;1;0;1;0" begin="1.6s" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+</svg>

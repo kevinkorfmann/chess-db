@@ -49,6 +49,8 @@ uv run chess-db list
 uv run chess-db eval "Italian Game" --depth 14
 ```
 
+![Terminal demo: eval](docs/eval-demo.svg)
+
 ### Learn the Scotch (recommended workflow)
 1) **See the decision tree** (what branches after the shared start):
 
@@ -61,6 +63,8 @@ uv run chess-db tree --prefix "Scotch Game" --levels 3
 ```bash
 uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8
 ```
+
+![Terminal demo: learn](docs/learn-demo.svg)
 
 3) **Quiz** (opening name → type the first N SAN tokens):
 

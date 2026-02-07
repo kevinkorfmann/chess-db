@@ -32,6 +32,8 @@ def evaluate_position(board: chess.Board, *, depth: int, stockfish_path: str) ->
     # One PV at fixed depth.
     with chess.engine.SimpleEngine.popen_uci(stockfish_path) as engine:
         info = engine.analyse(board, chess.engine.Limit(depth=depth), multipv=1)
+        if isinstance(info, list):
+            info = info[0] if info else {}
         score = info.get("score")
         pv = info.get("pv")
         bestmove = info.get("bestmove")
