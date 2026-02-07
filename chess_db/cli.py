@@ -325,7 +325,13 @@ def quiz(
 def learn(
     prefix: str = typer.Option("Scotch Game", "--prefix", help="Filter by opening name prefix"),
     limit: int = typer.Option(20, "--limit", min=1, max=200),
-    chunk: int = typer.Option(8, "--chunk", min=4, max=20, help="Tokens per chunk to memorize"),
+    chunk: int = typer.Option(
+        8,
+        "--chunk",
+        min=2,
+        max=20,
+        help="SAN tokens per chunk (2 = one White + one Black move per line)",
+    ),
     eval: bool = typer.Option(True, "--eval/--no-eval", help="Show Stockfish eval + critical swing"),
     depth: int = typer.Option(10, "--depth", min=1, max=30, help="Stockfish depth for learn evals"),
     swing_cp: int = typer.Option(

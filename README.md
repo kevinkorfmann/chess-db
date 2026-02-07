@@ -1,13 +1,29 @@
 ## chess-db
 Store chess openings and **train them from memory**—with **Stockfish evaluation** so you don’t learn bad lines.
 
-### What this is for
-- **Store** openings as SAN move sequences (validated on insert)
-- **Evaluate** the resulting positions with Stockfish (UCI)
+### What this is for (learning-first)
 - **Learn** openings using a built-in trainer:
   - a branching **tree** view (decision points)
-  - a chunked **study sheet**
+  - a chunked **study sheet** (printable “rehearsal” format)
   - spaced-repetition **quizzes** and “what’s due today”
+- **Store** openings as SAN move sequences (validated on insert)
+- **Evaluate** positions with Stockfish (UCI) so you don’t drill bad lines
+
+### Quickstart: learn (recommended)
+```bash
+uv sync
+uv run chess-db init
+
+# load some lines (examples in scripts/)
+uv run python scripts/add_scotch_game.py
+
+# study sheet (chunk=2 => one White move + one Black move per line)
+uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --depth 10 --swing-cp 120
+```
+
+![Terminal demo: learn](docs/learn-demo.svg)
+
+[View SVG directly](docs/learn-demo.svg) (some editors block SVG images in markdown preview)
 
 ### Setup
 #### Prereqs
@@ -63,12 +79,8 @@ uv run chess-db tree --prefix "Scotch Game" --levels 3
 2) **Study sheet** (lines split into chunks you can rehearse):
 
 ```bash
-uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8
+uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2
 ```
-
-![Terminal demo: learn](docs/learn-demo.svg)
-
-[View SVG directly](docs/learn-demo.svg) (some editors block SVG images in markdown preview)
 
 3) **Quiz** (opening name → type the first N SAN tokens):
 
@@ -90,13 +102,13 @@ By default, `learn` will (if Stockfish is available):
 Tune it:
 
 ```bash
-uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8 --depth 10 --swing-cp 120
+uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --depth 10 --swing-cp 120
 ```
 
 Make it instant:
 
 ```bash
-uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 8 --no-eval
+uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --no-eval
 ```
 
 ### Notes / mnemonics (for “why”)
@@ -120,10 +132,22 @@ Load the Scotch Game Mastery set (paste your lines into the script first):
 uv run python scripts/add_scotch_extended.py
 ```
 
-Load the curated Italian Game set into your local DB:
+Load the Italian Game set (Italian Game) into your local DB:
 
 ```bash
 uv run python scripts/add_italian_game.py
+```
+
+Load the Italian Game Mastery set:
+
+```bash
+uv run python scripts/add_italian_extended.py
+```
+
+Load the Ponziani Extended set:
+
+```bash
+uv run python scripts/add_ponziani_extended.py
 ```
 
 Import your own lines (e.g. from a course / notes) from a TSV file:
