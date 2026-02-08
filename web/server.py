@@ -98,6 +98,12 @@ async def api_opening(opening_id: int) -> dict | None:
     }
 
 
+@app.get("/api/health")
+async def api_health() -> dict:
+    """Health check; verifies API is reachable."""
+    return {"status": "ok"}
+
+
 @app.post("/api/eval", response_model=EvalResponse | None)
 async def api_eval(req: EvalRequest, depth: int = 10) -> EvalResponse | None:
     """Evaluate a position with Stockfish. Returns None if Stockfish is not available."""

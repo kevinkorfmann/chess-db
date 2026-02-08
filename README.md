@@ -15,7 +15,7 @@ uv sync
 uv run chess-db init
 
 # load some lines (examples in scripts/)
-uv run python scripts/add_scotch_game.py
+uv run python scripts/add_scotch.py
 
 # study sheet (chunk=2 => one White move + one Black move per line)
 uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --depth 10 --swing-cp 120
@@ -142,39 +142,27 @@ If you prefer fewer, longer rehearsal lines, increase chunk size (example demo):
 Attach a 1-line plan you’ll see during `show` and after quizzes:
 
 ```bash
-uv run chess-db note "Scotch Game - Scotch Standard" --text "Default: ...Bc5 -> Be3, c3, Bc4, O-O. Development + central pressure."
-uv run chess-db show "Scotch Game - Scotch Standard"
+uv run chess-db note "Scotch Game - Main Line" --text "Default: ...Bc5 -> Be3, c3, Bc4, O-O. Development + central pressure."
+uv run chess-db show "Scotch Game - Main Line"
 ```
 
 ### Import scripts
-Load the curated Scotch set into your local DB:
+Load the Scotch set (base + extended) into your local DB:
 
 ```bash
-uv run python scripts/add_scotch_game.py
+uv run python scripts/add_scotch.py
 ```
 
-Load the Scotch Game Mastery set (paste your lines into the script first):
+Load the Italian Game set (base + extended):
 
 ```bash
-uv run python scripts/add_scotch_extended.py
+uv run python scripts/add_italian.py
 ```
 
-Load the Italian Game set (Italian Game) into your local DB:
+Load the Ponziani set:
 
 ```bash
-uv run python scripts/add_italian_game.py
-```
-
-Load the Italian Game Mastery set:
-
-```bash
-uv run python scripts/add_italian_extended.py
-```
-
-Load the Ponziani Extended set:
-
-```bash
-uv run python scripts/add_ponziani_extended.py
+uv run python scripts/add_ponziani.py
 ```
 
 Import your own lines (e.g. from a course / notes) from a TSV file:

@@ -112,5 +112,5 @@
   <text class="piece-w" x="181" y="296">&#9812;</text><text class="piece-w" x="216" y="296">&#9815;</text>
   <text class="piece-w" x="251" y="296">&#9816;</text><text class="piece-w" x="286" y="296">&#9814;</text>
   <!-- Caption -->
-  <text x="160" y="350" text-anchor="middle" fill="#94a3b8" font-size="14" font-family="system-ui">Web interface: 1. e4</text>
+  <text x="160" y="350" text-anchor="middle" fill="#94a3b8" font-size="14" font-family="system-ui">Opening move: 1. e4</text>
 </svg>
