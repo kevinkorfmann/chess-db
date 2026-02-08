@@ -46,12 +46,21 @@ async def index() -> HTMLResponse:
 
 
 @app.get("/api/openings")
-async def api_openings(prefix: str | None = None, limit: int = 200) -> list[dict]:
-    """List openings, optionally filtered by name prefix."""
+async def api_openings(
+    prefix: str | None = None,
+    q: str | None = None,
+    limit: int = 500,
+) -> list[dict]:
+    """List openings, optionally filtered by name prefix or substring query."""
     db = _db()
     init_db(db)
     with db.connect() as conn:
-        if prefix:
+        if q:
+            rows = conn.execute(
+                "SELECT id, name, moves_san FROM openings WHERE name LIKE ? ORDER BY name ASC LIMIT ?",
+                (f"%{q}%", limit),
+            ).fetchall()
+        elif prefix:
             rows = conn.execute(
                 "SELECT id, name, moves_san FROM openings WHERE name LIKE ? ORDER BY name ASC LIMIT ?",
                 (f"{prefix}%", limit),

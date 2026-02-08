@@ -5,3 +5,6 @@ __pycache__/
 
 data/
 .git-replacements
+
+# Archived original hand-crafted scripts
+scripts/archive/

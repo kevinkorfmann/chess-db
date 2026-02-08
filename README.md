@@ -1,34 +1,74 @@
-## chess-db
-Store chess openings and **train them from memory**—with **Stockfish evaluation** so you don’t learn bad lines.
+# Chess DB
 
-### What this is for (learning-first)
-- **Learn** openings using a built-in trainer:
-  - a branching **tree** view (decision points)
-  - a chunked **study sheet** (printable “rehearsal” format)
-  - spaced-repetition **quizzes** and “what’s due today”
-- **Store** openings as SAN move sequences (validated on insert)
-- **Evaluate** positions with Stockfish (UCI) so you don’t drill bad lines
+Store chess openings and **train them from memory** -- with **Stockfish evaluation** so you don't learn bad lines.
 
-### Quickstart: learn (recommended)
+---
+
+## What it does
+
+| Feature | Description |
+|---------|-------------|
+| **Store** | SAN move sequences, validated on insert |
+| **Evaluate** | Stockfish (UCI) scores every position -- skip bad lines |
+| **Learn** | Study sheets, decision trees, spaced-repetition quizzes |
+| **Browse** | Interactive web board with move-by-move navigation |
+
+---
+
+## Quickstart
+
 ```bash
 uv sync
 uv run chess-db init
+```
 
-# load some lines (examples in scripts/)
+### Load openings
+
+Two Stockfish-generated repertoires ship in `scripts/`:
+
+| Opening | Lines | Variants |
+|---------|------:|----------|
+| **Italian Game** | 300 | Anti-Italian, Giuoco Piano, Hungarian, Semi-Italian, Two Knights |
+| **Scotch Game** | 300 | Classical, Counter, Gambit Decline, Main Line, Queen Attack, Schmidt, Steinitz |
+
+```bash
+uv run python scripts/add_italian.py
 uv run python scripts/add_scotch.py
+```
 
-# study sheet (chunk=2 => one White move + one Black move per line)
-uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --depth 10 --swing-cp 120
+Each line is 10 moves deep, tagged by Stockfish evaluation:
+`Winning` / `Clear Edge` / `Slight Edge` / `Equal` / `Tough` / `Difficult`
+
+### Study & train
+
+```bash
+# study sheet (chunk=2 => one White + one Black move per line)
+uv run chess-db learn --prefix "Italian" --limit 10 --chunk 2 --depth 10
+
+# decision tree
+uv run chess-db tree --prefix "Scotch Game" --levels 3
+
+# quiz
+uv run chess-db quiz --prefix "Italian" --tokens 8
+
+# spaced-repetition review
+uv run chess-db due --prefix "Scotch Game"
 ```
 
 ![Terminal demo: learn (didactic)](docs/learn-didactic-demo.svg)
 
-[View SVG directly](docs/learn-didactic-demo.svg) (some editors block SVG images in markdown preview)
+[View SVG directly](docs/learn-didactic-demo.svg) -- some editors block SVG images in markdown preview.
 
-### Web interface
+---
+
+## Web interface
+
 Browse openings with an interactive chess board:
 
 ```bash
+# kill any existing server on port 8080
+lsof -ti:8080 | xargs kill
+
 uv run chess-db serve
 ```
 
@@ -39,48 +79,54 @@ Then open http://127.0.0.1:8080
 [View SVG directly](docs/web-board-demo.svg)
 
 **Board features:**
+- File/rank coordinates with flip support
 - Click an opening in the sidebar to load it
-- Step through moves: **← Prev** / **Next →** or **First** / **Last**
-- **Flip** to view from Black’s perspective
-- **Keyboard**: `←` `→` arrows or **Space** to step forward
-- **Filter** by name (e.g. `Scotch Game`), then **Refresh** after loading new openings
-- **Stockfish eval** (optional): toggle to show evaluation after each move (requires Stockfish)
+- Step through moves: **Prev** / **Next** or **First** / **Last**
+- **Flip** to view from Black's perspective
+- **Keyboard**: `Left`/`Right` arrows, `Home`/`End`, `F` flip, `J`/`K` prev/next opening, `Ctrl+K` search
+- **Filter** by name, then **Refresh** after loading new openings
+- **Stockfish eval** (optional): toggle to show evaluation after each move
 
-### Setup
-#### Prereqs
-- **Python**: 3.11+
-- **Stockfish engine binary** (recommended)
+---
 
-macOS (Homebrew):
+## Setup
+
+### Prerequisites
+
+- **Python** 3.11+
+- **Stockfish** engine binary (recommended)
 
 ```bash
+# macOS
 brew install stockfish
 ```
 
-#### Install (uv)
+### Install
+
 ```bash
 uv sync
 uv run chess-db --help
 ```
 
 ### Configuration
-- **Database path**
-  - default: `./data/chess_db.sqlite3`
-  - override: `CHESS_DB_PATH`
-- **Stockfish binary**
-  - default: `stockfish` on `PATH`
-  - override: `STOCKFISH_PATH`
 
-Example:
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CHESS_DB_PATH` | `./data/chess_db.sqlite3` | Database file |
+| `STOCKFISH_PATH` | `stockfish` (on `PATH`) | Stockfish binary |
 
 ```bash
 export STOCKFISH_PATH="/opt/homebrew/bin/stockfish"
 export CHESS_DB_PATH="data/chess_db.sqlite3"
 ```
 
-### Quickstart (store + evaluate)
+---
+
+## CLI reference
+
+### Store & evaluate
+
 ```bash
-uv run chess-db init
 uv run chess-db add "Italian Game" --moves "e4 e5 Nf3 Nc6 Bc4"
 uv run chess-db list
 uv run chess-db eval "Italian Game" --depth 14
@@ -88,89 +134,76 @@ uv run chess-db eval "Italian Game" --depth 14
 
 ![Terminal demo: eval](docs/eval-demo.svg)
 
-[View SVG directly](docs/eval-demo.svg) (some editors block SVG images in markdown preview)
+[View SVG directly](docs/eval-demo.svg)
 
-### Learn the Scotch (recommended workflow)
-1) **See the decision tree** (what branches after the shared start):
+### Learn workflow
+
+1. **Decision tree** -- see what branches from the shared start:
 
 ```bash
 uv run chess-db tree --prefix "Scotch Game" --levels 3
 ```
 
-2) **Study sheet** (lines split into chunks you can rehearse):
+2. **Study sheet** -- lines split into chunks for rehearsal:
 
 ```bash
 uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2
 ```
 
-3) **Quiz** (opening name → type the first N SAN tokens):
+3. **Quiz** -- opening name -> type the first N SAN tokens:
 
 ```bash
 uv run chess-db quiz --prefix "Scotch Game" --tokens 8
 ```
 
-4) **Daily review** (spaced repetition):
+4. **Daily review** -- spaced repetition:
 
 ```bash
 uv run chess-db due --prefix "Scotch Game"
 ```
 
-### Learn output: Stockfish eval + critical moment
-By default, `learn` will (if Stockfish is available):
-- Print the **final eval** (White POV)
-- Highlight the **critical move** (largest eval swing)
+### Stockfish eval in learn
 
-Tune it:
+`learn` will (if Stockfish is available) print the **final eval** and highlight the **critical move** (largest eval swing):
 
 ```bash
-uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --depth 10 --swing-cp 120
+# with eval
+uv run chess-db learn --prefix "Italian" --limit 10 --chunk 2 --depth 10 --swing-cp 120
+
+# instant (skip eval)
+uv run chess-db learn --prefix "Italian" --limit 10 --chunk 2 --no-eval
 ```
 
-Make it instant:
+![Terminal demo: learn + eval](docs/learn-demo.svg)
+
+[View SVG directly](docs/learn-demo.svg)
+
+### Notes / mnemonics
+
+Attach a 1-line plan visible during `show` and after quizzes:
 
 ```bash
-uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --no-eval
-```
-
-If you prefer fewer, longer rehearsal lines, increase chunk size (example demo):
-
-![Terminal demo: learn + eval + critical swing](docs/learn-demo.svg)
-
-[View SVG directly](docs/learn-demo.svg) (some editors block SVG images in markdown preview)
-
-### Notes / mnemonics (for “why”)
-Attach a 1-line plan you’ll see during `show` and after quizzes:
-
-```bash
-uv run chess-db note "Scotch Game - Main Line" --text "Default: ...Bc5 -> Be3, c3, Bc4, O-O. Development + central pressure."
+uv run chess-db note "Scotch Game - Main Line" \
+  --text "Default: ...Bc5 -> Be3, c3, Bc4, O-O. Development + central pressure."
 uv run chess-db show "Scotch Game - Main Line"
 ```
 
-### Import scripts
-Load the Scotch set (base + extended) into your local DB:
+---
 
-```bash
-uv run python scripts/add_scotch.py
-```
+## Import your own lines
 
-Load the Italian Game set (base + extended):
-
-```bash
-uv run python scripts/add_italian.py
-```
-
-Load the Ponziani set:
-
-```bash
-uv run python scripts/add_ponziani.py
-```
-
-Import your own lines (e.g. from a course / notes) from a TSV file:
-
-- Format: one line per opening as `<name><TAB><pgn moves>`
-- Example:
-  - `Scotch Game - Line 01<TAB>1. e4 e5 2. Nf3 Nc6 3. d4 exd4 ...`
+Import from a TSV file (one line per opening as `<name><TAB><pgn moves>`):
 
 ```bash
 uv run python scripts/import_openings_tsv.py path/to/openings.tsv
 ```
+
+---
+
+## How lines are generated
+
+Lines are created by playing random Stockfish games from a fixed opening position.
+At each move Stockfish returns the top-4 candidates and one is picked at random
+(weighted toward the best move). 300 games per opening, 10 moves deep.
+
+See [`scripts/GENERATION_STRATEGY.md`](scripts/GENERATION_STRATEGY.md) for full details.
