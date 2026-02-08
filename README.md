@@ -25,6 +25,22 @@ uv run chess-db learn --prefix "Scotch Game" --limit 10 --chunk 2 --depth 10 --s
 
 [View SVG directly](docs/learn-didactic-demo.svg) (some editors block SVG images in markdown preview)
 
+### Web interface
+Browse openings with an interactive chess board:
+
+```bash
+uv run chess-db serve
+```
+
+Then open http://127.0.0.1:8080
+
+**Board features:**
+- Click an opening in the sidebar to load it
+- Step through moves: **← Prev** / **Next →** or **First** / **Last**
+- **Flip** to view from Black’s perspective
+- **Keyboard**: `←` `→` arrows or **Space** to step forward
+- **Filter** by name (e.g. `Scotch Game`), then **Refresh** after loading new openings
+
 ### Setup
 #### Prereqs
 - **Python**: 3.11+

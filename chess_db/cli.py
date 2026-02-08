@@ -514,5 +514,20 @@ def tree(
     _recurse(lines, len(lcp), levels, indent="- ")
 
 
+@app.command()
+def serve(
+    port: int = typer.Option(8080, "--port", help="Port to bind"),
+    host: str = typer.Option("127.0.0.1", "--host", help="Host to bind"),
+) -> None:
+    """Start the web interface for browsing openings."""
+    import uvicorn
+
+    uvicorn.run(
+        "web.server:app",
+        host=host,
+        port=port,
+    )
+
+
 if __name__ == "__main__":
     app()

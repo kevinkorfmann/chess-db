@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chess DB — Opening Repertoire</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1419;
+      --bg-card: #1a2332;
+      --accent: #4ade80;
+      --accent-dim: #22c55e40;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --wood-dark: #5c4033;
+      --wood-light: #c4a574;
+      --square-light: #e8ddc8;
+      --square-dark: #7d945d;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    header {
+      grid-column: 1 / -1;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--wood-dark) 100%);
+      border-bottom: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      margin: 0;
+      color: var(--accent);
+    }
+    .search-wrap {
+      flex: 1;
+      max-width: 400px;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+    .search-wrap input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-dim);
+    }
+    .search-wrap input::placeholder { color: var(--text-muted); }
+    .header-btn {
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .header-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    aside {
+      padding: 1rem;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      background: var(--bg-card);
+    }
+    main {
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .opening-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .opening-list li {
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+    }
+    .opening-list li:hover { background: var(--accent-dim); }
+    .opening-list li.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: calc(0.75rem - 3px);
+    }
+
+    .board-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    .board-wrapper {
+      position: relative;
+      padding: 12px;
+      background: linear-gradient(145deg, #3d2817 0%, #6b4423 50%, #4a3520 100%);
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .board-inner {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      width: min(72vw, 400px);
+      height: min(72vw, 400px);
+      gap: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .board-inner.flipped { transform: rotate(180deg); }
+    .square {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.5rem, 5vw, 2.5rem);
+      user-select: none;
+      transition: background 0.1s;
+    }
+    .square.light { background: var(--square-light); }
+    .square.dark { background: var(--square-dark); }
+    .square .piece { line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+    .square.light .piece { color: #1a1a1a; }
+    .square.dark .piece { color: #f5f5f5; }
+    .board-coords {
+      position: absolute;
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      pointer-events: none;
+    }
+    .board-coords.file { bottom: 14px; }
+    .board-coords.rank { top: 14px; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .controls button {
+      padding: 0.5rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .controls button:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .controls button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .move-counter {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      min-width: 4rem;
+    }
+    .keyboard-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    .detail-card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .detail-card h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.25rem;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+    .moves-display {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      word-break: break-word;
+      line-height: 1.8;
+    }
+    .moves-display .highlight {
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .moves-display .current {
+      background: var(--accent-dim);
+      padding: 0 2px;
+      border-radius: 3px;
+    }
+    .eval-badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      background: var(--accent-dim);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-right: 0.5rem;
+    }
+    .notes { font-size: 0.9rem; color: var(--text-muted); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-muted);
+    }
+    .empty-state p { margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header>
+      <h1>♟ Chess DB</h1>
+      <div class="search-wrap">
+        <input type="text" id="search" placeholder="Filter by name (e.g. Scotch Game)" autocomplete="off">
+      </div>
+      <button id="btn-refresh" class="header-btn">Refresh</button>
+    </header>
+
+    <aside>
+      <div class="section-title">Due Today</div>
+      <ul class="opening-list" id="due-list"></ul>
+      <div class="section-title" style="margin-top: 1rem;">All Openings</div>
+      <ul class="opening-list" id="openings-list"></ul>
+    </aside>
+
+    <main>
+      <div id="board-section" class="board-section" style="display: none;">
+        <div class="board-wrapper">
+          <div id="board" class="board-inner"></div>
+        </div>
+        <div class="controls">
+          <button id="btn-first">⏮ First</button>
+          <button id="btn-prev">← Prev</button>
+          <button id="btn-next">Next →</button>
+          <button id="btn-last">Last ⏭</button>
+          <button id="btn-flip">↕ Flip</button>
+          <span class="move-counter" id="move-counter">0 / 0</span>
+        </div>
+        <div class="keyboard-hint">← → arrows · Space to step</div>
+      </div>
+      <div id="detail" class="detail-card" style="display: none;">
+        <h2 id="detail-name"></h2>
+        <div class="moves-display" id="detail-moves"></div>
+        <div id="detail-eval"></div>
+        <div class="notes" id="detail-notes"></div>
+      </div>
+      <div id="empty" class="empty-state">
+        <p>Select an opening from the list</p>
+        <p style="font-size: 0.85rem;">Run <code>uv run python scripts/add_scotch_game.py</code> to load openings, then click <strong>Refresh</strong></p>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script>
+    const API = '/api';
+    const PIECES = { K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙', k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
+    let game = null;
+    let currentOpening = null;
+    let moveIndex = 0;
+    let flipped = false;
+
+    function tokenize(movesSan) {
+      return movesSan ? movesSan.trim().split(/\s+/).filter(Boolean) : [];
+    }
+
+    function renderBoard() {
+      if (!game) return;
+      const boardEl = document.getElementById('board');
+      const fen = game.fen().split(' ')[0];
+      const rows = fen.split('/');
+      boardEl.innerHTML = '';
+      boardEl.classList.toggle('flipped', flipped);
+      for (let r = 0; r < 8; r++) {
+        const row = rows[r];
+        let col = 0;
+        for (const ch of row) {
+          if (/[1-8]/.test(ch)) {
+            for (let i = 0; i < parseInt(ch, 10); i++) {
+              const sq = document.createElement('div');
+              sq.className = `square ${(r + col + i) % 2 === 0 ? 'light' : 'dark'}`;
+              boardEl.appendChild(sq);
+            }
+            col += parseInt(ch, 10);
+          } else {
+            const sq = document.createElement('div');
+            sq.className = `square ${(r + col) % 2 === 0 ? 'light' : 'dark'}`;
+            const piece = document.createElement('span');
+            piece.className = 'piece';
+            piece.textContent = PIECES[ch] || '';
+            if (flipped) piece.style.transform = 'rotate(180deg)';
+            sq.appendChild(piece);
+            boardEl.appendChild(sq);
+            col++;
+          }
+        }
+      }
+    }
+
+    function goToMove(idx) {
+      if (!currentOpening) return;
+      const tokens = tokenize(currentOpening.moves_san);
+      game.reset();
+      moveIndex = 0;
+      for (let i = 0; i < Math.min(idx, tokens.length); i++) {
+        try {
+          game.move(tokens[i]);
+          moveIndex = i + 1;
+        } catch (_) { break; }
+      }
+      renderBoard();
+      updateControls();
+      highlightMoves();
+    }
+
+    function updateControls() {
+      const tokens = tokenize(currentOpening?.moves_san ?? '');
+      const n = tokens.length;
+      document.getElementById('btn-first').disabled = moveIndex === 0;
+      document.getElementById('btn-prev').disabled = moveIndex === 0;
+      document.getElementById('btn-next').disabled = moveIndex >= n;
+      document.getElementById('btn-last').disabled = moveIndex >= n;
+      document.getElementById('move-counter').textContent = `${moveIndex} / ${n}`;
+    }
+
+    function highlightMoves() {
+      const el = document.getElementById('detail-moves');
+      if (!el || !currentOpening) return;
+      const tokens = tokenize(currentOpening.moves_san);
+      const parts = tokens.map((t, i) => {
+        let cls = '';
+        if (i < moveIndex) cls = 'highlight';
+        else if (i === moveIndex && moveIndex > 0) cls = 'current';
+        return cls ? `<span class="${cls}">${t}</span>` : t;
+      });
+      el.innerHTML = parts.join(' ');
+    }
+
+    async function loadOpenings(prefix = '') {
+      const params = prefix ? `?prefix=${encodeURIComponent(prefix)}` : '';
+      const res = await fetch(`${API}/openings${params}`);
+      return res.json();
+    }
+
+    async function loadDue() {
+      const res = await fetch(`${API}/due`);
+      return res.json();
+    }
+
+    function showOpening(opening) {
+      currentOpening = opening;
+      moveIndex = 0;
+      game = new Chess();
+      goToMove(0);
+
+      document.getElementById('board-section').style.display = 'flex';
+      document.getElementById('detail').style.display = 'block';
+      document.getElementById('empty').style.display = 'none';
+
+      document.getElementById('detail-name').textContent = opening.name;
+      if (opening.eval) {
+        const e = opening.eval;
+        const score = e.mate_in != null ? `M${e.mate_in}` : (e.score_cp != null ? (e.score_cp / 100).toFixed(2) : '?');
+        document.getElementById('detail-eval').innerHTML =
+          `<span class="eval-badge">depth ${e.depth}</span>` +
+          `<span class="eval-badge">${score}</span>`;
+      } else {
+        document.getElementById('detail-eval').innerHTML = '';
+      }
+      document.getElementById('detail-notes').textContent = opening.notes || '';
+      highlightMoves();
+    }
+
+    function selectFromList(id) {
+      document.querySelectorAll('.opening-list li.active').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll(`.opening-list li[data-id="${id}"]`).forEach(el => el.classList.add('active'));
+    }
+
+    async function openOpening(id) {
+      selectFromList(id);
+      try {
+        const res = await fetch(`${API}/openings/${id}`);
+        if (!res.ok) throw new Error(`Failed to load: ${res.status}`);
+        const opening = await res.json();
+        if (opening) showOpening(opening);
+      } catch (err) {
+        console.error('openOpening error:', err);
+        alert('Could not load opening. Check the console for details.');
+      }
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function renderOpeningList(items, listId) {
+      const ul = document.getElementById(listId);
+      ul.innerHTML = items.map(o => `
+        <li data-id="${o.id}" role="button" tabindex="0">${escapeHtml(o.name)}</li>
+      `).join('');
+      ul.querySelectorAll('li').forEach(li => {
+        const id = parseInt(li.dataset.id, 10);
+        li.addEventListener('click', () => openOpening(id));
+        li.addEventListener('keydown', (e) => e.key === 'Enter' && openOpening(id));
+      });
+    }
+
+    async function refresh() {
+      const prefix = document.getElementById('search').value.trim();
+      const [openings, due] = await Promise.all([
+        loadOpenings(prefix),
+        loadDue()
+      ]);
+      renderOpeningList(due, 'due-list');
+      renderOpeningList(openings, 'openings-list');
+    }
+
+    document.getElementById('btn-first').addEventListener('click', () => goToMove(0));
+    document.getElementById('btn-prev').addEventListener('click', () => goToMove(moveIndex - 1));
+    document.getElementById('btn-next').addEventListener('click', () => goToMove(moveIndex + 1));
+    document.getElementById('btn-last').addEventListener('click', () => goToMove(tokenize(currentOpening?.moves_san ?? '').length));
+    document.getElementById('btn-flip').addEventListener('click', () => {
+      flipped = !flipped;
+      renderBoard();
+    });
+    document.getElementById('btn-refresh').addEventListener('click', () => refresh());
+
+    document.addEventListener('keydown', (e) => {
+      if (!currentOpening || document.activeElement.tagName === 'INPUT') return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goToMove(moveIndex - 1); }
+      else if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goToMove(moveIndex + 1); }
+    });
+
+    document.getElementById('search').addEventListener('input', () => {
+      clearTimeout(window.searchTimeout);
+      window.searchTimeout = setTimeout(refresh, 200);
+    });
+
+    refresh();
+  </script>
+</body>
+</html>
