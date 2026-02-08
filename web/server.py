@@ -110,7 +110,10 @@ async def api_eval(req: EvalRequest, depth: int = 10) -> EvalResponse | None:
         board = chess.Board(req.fen)
     except ValueError:
         return None
-    result = evaluate_position(board, depth=depth, stockfish_path=stockfish_path)
+    try:
+        result = evaluate_position(board, depth=depth, stockfish_path=stockfish_path)
+    except Exception:
+        return None
     return EvalResponse(
         score_cp=result.score_cp,
         mate_in=result.mate_in,

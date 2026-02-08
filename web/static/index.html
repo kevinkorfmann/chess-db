@@ -408,9 +408,11 @@
           body: JSON.stringify({ fen: game.fen() }),
           signal: evalAbort.signal
         });
-        const data = res.status === 204 ? null : (res.ok ? await res.json() : null);
+        let data = null;
+        if (res.status === 204) data = null;
+        else if (res.ok) { try { data = await res.json(); } catch (_) { data = null; } }
         if (data === null) {
-          el.textContent = res.ok ? 'Stockfish not available' : 'Eval failed';
+          el.textContent = res.ok ? 'Stockfish not available (install with: brew install stockfish)' : `Eval failed (${res.status})`;
         } else {
           const score = data.mate_in != null ? `M${data.mate_in}` : (data.score_cp != null ? (data.score_cp / 100).toFixed(2) : '?');
           el.textContent = `Position eval (d${data.depth}): ${score}`;

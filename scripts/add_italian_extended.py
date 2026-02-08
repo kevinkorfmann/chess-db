@@ -25,8 +25,8 @@ def sanitize_pgn_moves(pgn: str) -> str:
     return " ".join(tokens)
 
 
-# Paste your Italian Game Mastery lines here as (name, pgn_moves).
-ITALIAN_MASTERY_LINES: list[tuple[str, str]] = [
+# Paste your Italian Extended lines here as (name, pgn_moves).
+ITALIAN_EXTENDED_LINES: list[tuple[str, str]] = [
     (
         "Italian Extended #01 - 🎯 Queen's Assault",
         "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. d4 Nxe4 5. dxe5 Bc5 6. Qd5 Bxf2+ 7. Kf1 O-O 8. Qxe4",
@@ -307,9 +307,9 @@ def main() -> None:
     db = Db(settings.db_path)
     init_db(db)
 
-    if not ITALIAN_MASTERY_LINES:
+    if not ITALIAN_EXTENDED_LINES:
         raise SystemExit(
-            "No lines configured. Paste (name, pgn) pairs into ITALIAN_MASTERY_LINES in "
+            "No lines configured. Paste (name, pgn) pairs into ITALIAN_EXTENDED_LINES in "
             "scripts/add_italian_extended.py."
         )
 
@@ -318,7 +318,7 @@ def main() -> None:
     failed = 0
 
     with db.connect() as conn:
-        for name, pgn in ITALIAN_MASTERY_LINES:
+        for name, pgn in ITALIAN_EXTENDED_LINES:
             moves_san = sanitize_pgn_moves(pgn)
             try:
                 add_opening(conn, name=name, moves_san=moves_san)

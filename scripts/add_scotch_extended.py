@@ -25,10 +25,10 @@ def sanitize_pgn_moves(pgn: str) -> str:
     return " ".join(tokens)
 
 
-# Paste your Scotch Game Mastery lines here as (name, pgn_moves).
+# Paste your Scotch Extended lines here as (name, pgn_moves).
 # Example:
 # ("Scotch Extended - Line 01", "1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Nxd4 ..."),
-SCOTCH_MASTERY_LINES: list[tuple[str, str]] = [
+SCOTCH_EXTENDED_LINES: list[tuple[str, str]] = [
     (
         "Scotch Extended #01 - Knight Hunt",
         "1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Nxd4 Nxd4 5. Qxd4 Nf6 6. e5 c5 7. Qe3 Nd5 8. Qf3",
@@ -292,9 +292,9 @@ def main() -> None:
     db = Db(settings.db_path)
     init_db(db)
 
-    if not SCOTCH_MASTERY_LINES:
+    if not SCOTCH_EXTENDED_LINES:
         raise SystemExit(
-            "No lines configured. Paste (name, pgn) pairs into SCOTCH_MASTERY_LINES in "
+            "No lines configured. Paste (name, pgn) pairs into SCOTCH_EXTENDED_LINES in "
             "scripts/add_scotch_extended.py."
         )
 
@@ -303,7 +303,7 @@ def main() -> None:
     failed = 0
 
     with db.connect() as conn:
-        for name, pgn in SCOTCH_MASTERY_LINES:
+        for name, pgn in SCOTCH_EXTENDED_LINES:
             moves_san = sanitize_pgn_moves(pgn)
             try:
                 add_opening(conn, name=name, moves_san=moves_san)

@@ -25,7 +25,7 @@ def sanitize_pgn_moves(pgn: str) -> str:
     return " ".join(tokens)
 
 
-# Italian Game (Italian Game) lines you provided.
+# Italian Game lines.
 ITALIAN_LINES: list[tuple[str, str]] = [
     (
         "Italian Game #01 - Rook Gambit",
