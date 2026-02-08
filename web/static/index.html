@@ -167,9 +167,9 @@
     }
     .square.light { background: var(--square-light); }
     .square.dark { background: var(--square-dark); }
-    .square .piece { line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-    .square.light .piece { color: #1a1a1a; }
-    .square.dark .piece { color: #f5f5f5; }
+    .square .piece { line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    .piece-white { color: #f5f5f5; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+    .piece-black { color: #1a1a1a; text-shadow: 0 1px 1px rgba(255,255,255,0.3); }
     .board-coords {
       position: absolute;
       font-size: 11px;
@@ -215,6 +215,20 @@
       color: var(--text-muted);
       opacity: 0.7;
     }
+    .eval-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .eval-toggle input { accent-color: var(--accent); }
+    .position-eval {
+      font-size: 0.9rem;
+      color: var(--accent);
+      min-height: 1.4em;
+    }
+    .position-eval.loading { opacity: 0.6; }
 
     .detail-card {
       width: 100%;
@@ -294,7 +308,12 @@
           <button id="btn-last">Last ⏭</button>
           <button id="btn-flip">↕ Flip</button>
           <span class="move-counter" id="move-counter">0 / 0</span>
+          <label class="eval-toggle">
+            <input type="checkbox" id="eval-toggle" title="Stockfish evaluation per move">
+            Stockfish eval
+          </label>
         </div>
+        <div class="position-eval" id="position-eval"></div>
         <div class="keyboard-hint">← → arrows · Space to step</div>
       </div>
       <div id="detail" class="detail-card" style="display: none;">
@@ -318,6 +337,7 @@
     let currentOpening = null;
     let moveIndex = 0;
     let flipped = false;
+    let evalAbort = null;
 
     function tokenize(movesSan) {
       return movesSan ? movesSan.trim().split(/\s+/).filter(Boolean) : [];
@@ -345,7 +365,7 @@
             const sq = document.createElement('div');
             sq.className = `square ${(r + col) % 2 === 0 ? 'light' : 'dark'}`;
             const piece = document.createElement('span');
-            piece.className = 'piece';
+            piece.className = `piece ${/[A-Z]/.test(ch) ? 'piece-white' : 'piece-black'}`;
             piece.textContent = PIECES[ch] || '';
             if (flipped) piece.style.transform = 'rotate(180deg)';
             sq.appendChild(piece);
@@ -370,6 +390,36 @@
       renderBoard();
       updateControls();
       highlightMoves();
+      if (document.getElementById('eval-toggle')?.checked) fetchPositionEval();
+      else document.getElementById('position-eval').textContent = '';
+    }
+
+    async function fetchPositionEval() {
+      const el = document.getElementById('position-eval');
+      if (!game || !el) return;
+      if (evalAbort) evalAbort.abort();
+      evalAbort = new AbortController();
+      el.textContent = 'Analyzing…';
+      el.classList.add('loading');
+      try {
+        const res = await fetch(`${API}/eval?depth=10`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fen: game.fen() }),
+          signal: evalAbort.signal
+        });
+        const data = res.status === 204 ? null : (res.ok ? await res.json() : null);
+        if (data === null) {
+          el.textContent = res.ok ? 'Stockfish not available' : 'Eval failed';
+        } else {
+          const score = data.mate_in != null ? `M${data.mate_in}` : (data.score_cp != null ? (data.score_cp / 100).toFixed(2) : '?');
+          el.textContent = `Position eval (d${data.depth}): ${score}`;
+        }
+      } catch (e) {
+        if (e.name !== 'AbortError') el.textContent = '';
+      } finally {
+        el.classList.remove('loading');
+      }
     }
 
     function updateControls() {
@@ -386,12 +436,16 @@
       const el = document.getElementById('detail-moves');
       if (!el || !currentOpening) return;
       const tokens = tokenize(currentOpening.moves_san);
-      const parts = tokens.map((t, i) => {
+      const parts = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const moveNum = Math.floor(i / 2) + 1;
+        const numPrefix = (i % 2 === 0) ? `${moveNum}. ` : '';
         let cls = '';
         if (i < moveIndex) cls = 'highlight';
         else if (i === moveIndex && moveIndex > 0) cls = 'current';
-        return cls ? `<span class="${cls}">${t}</span>` : t;
-      });
+        const token = cls ? `<span class="${cls}">${tokens[i]}</span>` : tokens[i];
+        parts.push(numPrefix + token);
+      }
       el.innerHTML = parts.join(' ');
     }
 
@@ -483,6 +537,10 @@
     document.getElementById('btn-flip').addEventListener('click', () => {
       flipped = !flipped;
       renderBoard();
+    });
+    document.getElementById('eval-toggle').addEventListener('change', () => {
+      if (document.getElementById('eval-toggle').checked) fetchPositionEval();
+      else document.getElementById('position-eval').textContent = '';
     });
     document.getElementById('btn-refresh').addEventListener('click', () => refresh());
 

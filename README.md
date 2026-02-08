@@ -34,12 +34,17 @@ uv run chess-db serve
 
 Then open http://127.0.0.1:8080
 
+![Web interface: animated board](docs/web-board-demo.svg)
+
+[View SVG directly](docs/web-board-demo.svg)
+
 **Board features:**
 - Click an opening in the sidebar to load it
 - Step through moves: **← Prev** / **Next →** or **First** / **Last**
 - **Flip** to view from Black’s perspective
 - **Keyboard**: `←` `→` arrows or **Space** to step forward
 - **Filter** by name (e.g. `Scotch Game`), then **Refresh** after loading new openings
+- **Stockfish eval** (optional): toggle to show evaluation after each move (requires Stockfish)
 
 ### Setup
 #### Prereqs

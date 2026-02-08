@@ -4,15 +4,28 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import chess
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from chess_db.config import get_settings
 from chess_db.db import Db, init_db
+from chess_db.engine import evaluate_position, resolve_stockfish_path
 from chess_db.evals import latest_evaluation
 from chess_db.study import get_notes, pick_quiz_openings
+
+
+class EvalRequest(BaseModel):
+    fen: str
+
+
+class EvalResponse(BaseModel):
+    score_cp: int | None
+    mate_in: int | None
+    depth: int
 
 
 def _db() -> Db:
@@ -83,6 +96,26 @@ async def api_opening(opening_id: int) -> dict | None:
             else None
         ),
     }
+
+
+@app.post("/api/eval", response_model=EvalResponse | None)
+async def api_eval(req: EvalRequest, depth: int = 10) -> EvalResponse | None:
+    """Evaluate a position with Stockfish. Returns None if Stockfish is not available."""
+    try:
+        settings = get_settings()
+        stockfish_path = resolve_stockfish_path(settings.stockfish_path)
+    except FileNotFoundError:
+        return None
+    try:
+        board = chess.Board(req.fen)
+    except ValueError:
+        return None
+    result = evaluate_position(board, depth=depth, stockfish_path=stockfish_path)
+    return EvalResponse(
+        score_cp=result.score_cp,
+        mate_in=result.mate_in,
+        depth=result.depth,
+    )
 
 
 @app.get("/api/due")
